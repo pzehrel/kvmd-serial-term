@@ -3,5 +3,4 @@ description: Serial terminal access to the target machine via USB-TTL
 icon: share/svg/serial.svg
 path: serial
 daemon: kvmd-serial-term
-port: serial-term/server/unix_socket
 place: 25

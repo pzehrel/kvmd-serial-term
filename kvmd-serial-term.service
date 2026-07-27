@@ -10,15 +10,15 @@ ExecStart=/usr/bin/python -m kvmd_serial_term --config /etc/kvmd/serial-term.yam
 Restart=on-failure
 RestartSec=5s
 
-# Allow access to the serial device
-SupplementaryGroups=dialout uucp
+# Allow access to the serial device (Arch Linux uses uucp group)
+SupplementaryGroups=uucp
 
 # Security hardening
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/run /dev
-ReadOnlyPaths=/etc/kvmd /usr/lib/python3.14/site-packages /usr/share/kvmd
+ReadWritePaths=/run/kvmd /dev
+ReadOnlyPaths=/etc/kvmd /usr/share/kvmd
 PrivateTmp=yes
 
 [Install]
