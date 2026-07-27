@@ -1,0 +1,32 @@
+# PiKVM Nginx integration for kvmd-serial-term
+#
+# Add this to your kvmd Nginx configuration (e.g., /etc/kvmd/nginx/serial-term.conf):
+
+# HTTP: proxy the serial terminal page
+location /serial/ {
+    proxy_pass http://unix:/run/kvmd-serial-term.sock:/;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_read_timeout 86400s;
+    proxy_send_timeout 86400s;
+}
+
+# API: proxy WebSocket connections
+location /serial/ws {
+    proxy_pass http://unix:/run/kvmd-serial-term.sock:/ws;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_read_timeout 86400s;
+    proxy_send_timeout 86400s;
+}
+
+# Static files (xterm.js, CSS)
+location /serial/static/ {
+    proxy_pass http://unix:/run/kvmd-serial-term.sock:/static/;
+}
