@@ -1,21 +1,24 @@
 [Unit]
-Description=PiKVM Serial Console Daemon
+Description=PiKVM Serial Terminal Daemon
 After=network.target kvmd.service
 
 [Service]
 Type=simple
 User=kvmd
 Group=kvmd
-ExecStart=/usr/bin/python3 -m kvmd_serial_term --config /etc/kvmd/serial-term.yaml
+ExecStart=/usr/bin/python -m kvmd_serial_term --config /etc/kvmd/serial-term.yaml
 Restart=on-failure
 RestartSec=5s
+
+# Allow access to the serial device
+SupplementaryGroups=dialout uucp
 
 # Security hardening
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
 ReadWritePaths=/run /dev
-ReadOnlyPaths=/etc/kvmd
+ReadOnlyPaths=/etc/kvmd /usr/lib/python3.14/site-packages /usr/share/kvmd
 PrivateTmp=yes
 
 [Install]

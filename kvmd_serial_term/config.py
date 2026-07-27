@@ -1,6 +1,7 @@
 """Configuration loading and validation for kvmd-serial-term."""
 
 import os
+import pathlib
 from dataclasses import dataclass, field
 from typing import Optional, Union, TextIO
 
@@ -21,6 +22,8 @@ DEFAULT_SERIAL_CONFIG = {
 
 DEFAULT_SERVER_CONFIG = {
     "unix_socket": "/run/kvmd-serial-term.sock",
+    # Default: repo-local web/ for dev; override on PiKVM
+    "web_dir": str(pathlib.Path(__file__).resolve().parent.parent / "web"),
 }
 
 DEFAULT_CONFIG_PATH = "/etc/kvmd/serial-term.yaml"
@@ -46,6 +49,7 @@ class ServerConfig:
     """Server configuration."""
 
     unix_socket: str = DEFAULT_SERVER_CONFIG["unix_socket"]
+    web_dir: str = DEFAULT_SERVER_CONFIG["web_dir"]
 
 
 @dataclass

@@ -14,8 +14,6 @@ from kvmd_serial_term.client import ClientManager
 
 logger = logging.getLogger(__name__)
 
-_WEB_DIR = pathlib.Path(__file__).resolve().parent.parent / "web"
-
 
 async def _close_ws_safe(ws: web.WebSocketResponse) -> None:
     """Close a WebSocket connection, timing out after 1 second."""
@@ -44,9 +42,10 @@ class SerialTermServer:
         self._setup_routes()
 
     def _setup_routes(self) -> None:
+        web_dir = str(self._config.web_dir)
         self._app.router.add_get("/", self._handle_index)
         self._app.router.add_get("/ws", self._handle_websocket)
-        self._app.router.add_static("/static/", path=str(_WEB_DIR))
+        self._app.router.add_static("/static/", path=web_dir)
 
     async def start(self) -> None:
         self._runner = web.AppRunner(self._app)
@@ -83,7 +82,9 @@ class SerialTermServer:
             logger.info("Server stopped")
 
     async def _handle_index(self, _request: web.Request) -> web.FileResponse:
-        return web.FileResponse(_WEB_DIR / "index.html")
+        return web.FileResponse(
+            pathlib.Path(self._config.web_dir) / "index.html"
+        )
 
     # ── Serial relay ──────────────────────────────────────────────────────
 
