@@ -1,4 +1,4 @@
-# PiKVM Serial Console
+# PiKVM Serial Terminal
 
 A PiKVM extension that lets you control a target machine via a USB-TTL serial adapter through the PiKVM Web UI — no HDMI display needed.
 
@@ -6,7 +6,7 @@ A PiKVM extension that lets you control a target machine via a USB-TTL serial ad
 ┌─────────────┐     USB-TTL      ┌──────────────────┐
 │   PiKVM     │  (CH340+MAX3232) │   Target Machine  │
 │             │◄════════════════►│   (e.g. Proxmox)  │
-│  Web UI     │   Serial COM     │   Serial Console  │
+│  Web UI     │   Serial COM     │   Serial Terminal  │
 │   xterm.js  │                  │                   │
 └─────────────┘                  └──────────────────┘
 ```
@@ -27,7 +27,7 @@ A PiKVM extension that lets you control a target machine via a USB-TTL serial ad
 ## Target Machine Preparation
 
 1. **Enable COM port in BIOS** — usually enabled by default, check the "Super IO" or "Peripherals" section
-2. **Configure serial console** for your OS:
+2. **Configure serial terminal** for your OS:
 
    **Proxmox VE / Debian / Ubuntu:**
    ```
@@ -106,7 +106,7 @@ All serial fields are optional — defaults are `115200-8-N-1`.
 ## Usage
 
 1. Open the PiKVM Web UI
-2. Click **Serial Console** in the navigation menu
+2. Click **Serial Terminal** in the navigation menu
 3. A terminal window opens — start typing commands
 4. Only one client at a time controls the serial port; additional clients wait in a queue
 

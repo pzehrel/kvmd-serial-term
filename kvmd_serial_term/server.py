@@ -1,4 +1,4 @@
-"""aiohttp server: HTTP page + WebSocket ↔ serial relay with session management."""
+"""aiohttp server: HTTP page + WebSocket ↔ serial relay with client management."""
 
 import asyncio
 import json
@@ -10,7 +10,7 @@ from aiohttp import web
 
 from kvmd_serial_term.config import ServerConfig
 from kvmd_serial_term.serial_handler import SerialHandler
-from kvmd_serial_term.session import SessionManager
+from kvmd_serial_term.client import ClientManager
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ class SerialTermServer:
         self._app = web.Application()
         self._runner: "web.AppRunner | None" = None
         self._active_ws: "set[web.WebSocketResponse]" = set()
-        self._sessions = SessionManager(grace_period=10.0)
+        self._clients = ClientManager(grace_period=10.0)
         self._queued_ws: "dict[str, web.WebSocketResponse]" = {}
         self._relay_task: "asyncio.Task | None" = None
         self._setup_routes()
@@ -138,14 +138,14 @@ class SerialTermServer:
         logger.info("WebSocket client %s connected", client_id)
 
         # Try reconnect first, then acquire
-        reconnected = self._sessions.reconnect(client_id)
+        reconnected = self._clients.reconnect(client_id)
         if reconnected:
             await ws.send_str(json.dumps({"type": "active"}))
             await self._start_relay(ws)
             await self._ws_input_loop(ws, client_id)
             return ws
 
-        result = self._sessions.acquire(client_id)
+        result = self._clients.acquire(client_id)
 
         if result["type"] == "active":
             await ws.send_str(json.dumps({"type": "active"}))
@@ -163,10 +163,10 @@ class SerialTermServer:
         ws: web.WebSocketResponse,
         client_id: str,
     ) -> None:
-        was_active = self._sessions.is_active(client_id)
+        was_active = self._clients.is_active(client_id)
         try:
             async for msg in ws:
-                may_relay = self._sessions.is_active(client_id)
+                may_relay = self._clients.is_active(client_id)
                 if msg.type == web.WSMsgType.TEXT:
                     text = msg.data
                     if text.startswith("{"):
@@ -195,12 +195,12 @@ class SerialTermServer:
 
             if was_active:
                 await self._stop_relay()
-                promoted = self._sessions.release(client_id)
+                promoted = self._clients.release(client_id)
                 if promoted:
                     self._promote(promoted)
             else:
                 self._queued_ws.pop(client_id, None)
-                self._sessions.release(client_id)
+                self._clients.release(client_id)
 
             logger.info("WebSocket client %s disconnected", client_id)
 

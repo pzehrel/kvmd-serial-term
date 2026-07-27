@@ -1,4 +1,4 @@
-"""Serial port session management — exclusive access with queue and grace period."""
+"""Client management — exclusive serial port access with queue and grace period."""
 
 import logging
 import time
@@ -7,7 +7,7 @@ from typing import Dict, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 
-class SessionManager:
+class ClientManager:
     """Manages exclusive access to the serial port.
 
     - First client to call acquire() gets the port.

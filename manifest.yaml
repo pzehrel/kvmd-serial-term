@@ -1,5 +1,5 @@
-name: Serial Console
-description: Serial console access to the target machine via USB-TTL
+name: Serial Terminal
+description: Serial terminal access to the target machine via USB-TTL
 icon: share/svg/serial.svg
 path: serial
 daemon: kvmd-serial-term
