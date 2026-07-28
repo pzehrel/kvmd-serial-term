@@ -69,6 +69,11 @@ async def test_websocket_keypress_to_pty(temp_socket):
         conn = _unix_connector(temp_socket)
         async with ClientSession(connector=conn) as session:
             async with session.ws_connect("http://localhost/ws") as ws:
+                # Drain the \r\n kick that _start_relay sends on connect
+                await asyncio.sleep(0.2)
+                if select.select([master_fd], [], [], 0.3)[0]:
+                    os.read(master_fd, 1024)
+
                 # Send a keystroke
                 await ws.send_str("ls -la\n")
 
@@ -76,7 +81,6 @@ async def test_websocket_keypress_to_pty(temp_socket):
                 await asyncio.sleep(0.1)
 
                 # Read from PTY master (non-blocking)
-                import select
                 ready, _, _ = select.select([master_fd], [], [], 0.5)
                 assert master_fd in ready, "PTY master should have received data"
                 data = os.read(master_fd, 1024)
@@ -213,6 +217,11 @@ async def test_full_stack_session_queue(temp_socket):
         data1 = json.loads(msg.data)
         assert data1["type"] == "active"
 
+        # Drain the \r\n kick that _start_relay sends on connect
+        await asyncio.sleep(0.2)
+        if select.select([master_fd], [], [], 0.3)[0]:
+            os.read(master_fd, 1024)
+
         # Client 1 sends keystrokes → they reach the PTY
         await ws1.send_str("echo hello\n")
         await asyncio.sleep(0.1)
@@ -258,7 +267,11 @@ async def test_full_stack_session_queue(temp_socket):
         assert promo["type"] == "active", f"Expected active, got {promo}"
 
         # Wait briefly for relay to switch
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.3)
+
+        # Drain the \r\n kick from the promoted relay restart
+        if select.select([master_fd], [], [], 0.3)[0]:
+            os.read(master_fd, 1024)
 
         # Now client 2's keystrokes should reach the PTY
         await ws2.send_str("now active\n")

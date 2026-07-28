@@ -97,15 +97,17 @@ class SerialTermServer:
             logger.info("Serial port opened lazily")
             # Wait for DTR to take effect on the target machine
             await asyncio.sleep(0.5)
-            # Send a newline to trigger getty to re-print the login prompt.
-            await self._serial.write(b"\r\n")
-            # Give getty time to respond before the relay polling loop starts
-            await asyncio.sleep(0.3)
 
     async def _start_relay(self, ws: web.WebSocketResponse) -> None:
+        # Always stop any existing relay (which targets a previous ws)
         if self._relay_task is not None:
-            return  # already running
+            await self._stop_relay()
+
         await self._ensure_serial_open()
+
+        # Kick the target machine to produce output (e.g. login prompt)
+        await self._serial.write(b"\r\n")
+        await asyncio.sleep(0.3)
 
         async def relay() -> None:
             while not ws.closed:
