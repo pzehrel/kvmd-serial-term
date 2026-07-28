@@ -90,12 +90,34 @@ class SerialTermServer:
 
     # ── Serial relay ──────────────────────────────────────────────────────
 
+    def _is_pty_device(self) -> bool:
+        """Check if the configured serial device is a PTY (test fixture)."""
+        dev = self._serial._config.device
+        return "pts" in dev or dev.startswith("/dev/ttys")
+
     async def _ensure_serial_open(self) -> None:
-        """Open the serial port if not already open (lazy open)."""
-        if not self._serial.is_open:
+        """Open the serial port if not already open (lazy open).
+
+        On reconnect with a REAL serial device, close and reopen to cycle
+        DTR. This forces the target machine's getty to restart and re-print
+        the login banner. PTY devices (used in tests) skip this cycle."""
+        was_open = self._serial.is_open
+        if not was_open:
             await self._serial.open()
             logger.info("Serial port opened lazily")
             await asyncio.sleep(0.5)
+            return
+
+        if self._is_pty_device():
+            logger.info("PTY device, skipping DTR cycle")
+            await asyncio.sleep(0.1)
+            return
+
+        await self._serial.close()
+        await asyncio.sleep(0.3)
+        await self._serial.open()
+        logger.info("Serial port cycled (DTR reset)")
+        await asyncio.sleep(0.5)
 
     async def _start_relay(self, ws: web.WebSocketResponse) -> None:
         if self._relay_task is not None:
@@ -103,7 +125,11 @@ class SerialTermServer:
 
         await self._ensure_serial_open()
 
-        # Kick the target machine to produce output (e.g. login prompt)
+        # Send double newline to trigger getty to re-print the login banner.
+        # A single \r\n on an idle getty does nothing; two empty lines
+        # (with a brief pause between) forces it to re-display the prompt.
+        await self._serial.write(b"\r\n")
+        await asyncio.sleep(0.1)
         await self._serial.write(b"\r\n")
         await asyncio.sleep(0.5)
 
