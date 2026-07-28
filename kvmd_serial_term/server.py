@@ -95,26 +95,20 @@ class SerialTermServer:
         dev = self._serial._config.device
         return "pts" in dev or dev.startswith("/dev/ttys")
 
-    async def _ensure_serial_open(self) -> None:
-        """Open the serial port if not already open (lazy open).
+    async def _ensure_serial_dtr_cycle(self) -> None:
+        """Ensure serial is open AND has a fresh DTR cycle.
 
-        On reconnect with a REAL serial device, close and reopen to cycle
-        DTR. This forces the target machine's getty to restart and re-print
-        the login banner. PTY devices (used in tests) skip this cycle."""
-        was_open = self._serial.is_open
-        if not was_open:
-            await self._serial.open()
-            logger.info("Serial port opened lazily")
-            await asyncio.sleep(0.5)
-            return
+        This forces the target machine's getty to restart and re-print
+        the login banner, regardless of whether this is a first connection
+        or a reconnection. PTY devices (tests) skip the cycle."""
+        if self._serial.is_open:
+            if not self._is_pty_device():
+                await self._serial.close()
+                await asyncio.sleep(0.3)
+            else:
+                logger.info("PTY device, skipping DTR cycle")
+                return
 
-        if self._is_pty_device():
-            logger.info("PTY device, skipping DTR cycle")
-            await asyncio.sleep(0.1)
-            return
-
-        await self._serial.close()
-        await asyncio.sleep(0.3)
         await self._serial.open()
         logger.info("Serial port cycled (DTR reset)")
         await asyncio.sleep(0.5)
@@ -123,7 +117,7 @@ class SerialTermServer:
         if self._relay_task is not None:
             await self._stop_relay()
 
-        await self._ensure_serial_open()
+        await self._ensure_serial_dtr_cycle()
 
         # DTR cycle (in _ensure_serial_open) will cause getty to restart
         # and re-print the login banner. No need for an extra \r\n kick.
