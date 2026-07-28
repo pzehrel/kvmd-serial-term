@@ -107,8 +107,11 @@ class SerialTermServer:
 
         await self._serial.open()
         logger.info("Serial port cycled (DTR reset)")
-        # Give DTR + remote getty time to restart and print the login banner
-        await asyncio.sleep(1.5)
+        await asyncio.sleep(0.5)
+        # Send ONE newline to trigger getty to print the login banner
+        # DO NOT send two — the echo causes a second duplicate prompt
+        await self._serial.write(b"\n")
+        await asyncio.sleep(0.5)
 
     async def _start_relay(self, ws: web.WebSocketResponse) -> None:
         if self._relay_task is not None:
