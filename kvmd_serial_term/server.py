@@ -125,13 +125,8 @@ class SerialTermServer:
 
         await self._ensure_serial_open()
 
-        # Send double newline to trigger getty to re-print the login banner.
-        # A single \r\n on an idle getty does nothing; two empty lines
-        # (with a brief pause between) forces it to re-display the prompt.
-        await self._serial.write(b"\r\n")
-        await asyncio.sleep(0.1)
-        await self._serial.write(b"\r\n")
-        await asyncio.sleep(0.5)
+        # DTR cycle (in _ensure_serial_open) will cause getty to restart
+        # and re-print the login banner. No need for an extra \r\n kick.
 
         async def relay() -> None:
             while not ws.closed:
