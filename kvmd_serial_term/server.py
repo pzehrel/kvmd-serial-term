@@ -93,11 +93,12 @@ class SerialTermServer:
         if not self._serial.is_open:
             await self._serial.open()
             logger.info("Serial port opened lazily")
+            # Wait for DTR to take effect on the target machine
+            await asyncio.sleep(0.5)
             # Send a newline to trigger getty to re-print the login prompt.
-            # Without this, the user sees a blank terminal until they type
-            # something because getty output was already consumed before
-            # the port was opened (or DTR alone isn't enough).
             await self._serial.write(b"\r\n")
+            # Give getty time to respond before the relay polling loop starts
+            await asyncio.sleep(0.3)
 
     async def _start_relay(self, ws: web.WebSocketResponse) -> None:
         if self._relay_task is not None:
@@ -109,6 +110,7 @@ class SerialTermServer:
                 try:
                     data = await self._serial.read()
                     if data:
+                        logger.debug("Relay: read %d bytes from serial", len(data))
                         text = data.decode("utf-8", errors="replace")
                         await ws.send_str(text)
                 except Exception:
