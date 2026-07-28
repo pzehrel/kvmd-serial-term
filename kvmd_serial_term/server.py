@@ -93,6 +93,11 @@ class SerialTermServer:
         if not self._serial.is_open:
             await self._serial.open()
             logger.info("Serial port opened lazily")
+            # Send a newline to trigger getty to re-print the login prompt.
+            # Without this, the user sees a blank terminal until they type
+            # something because getty output was already consumed before
+            # the port was opened (or DTR alone isn't enough).
+            await self._serial.write(b"\r\n")
 
     async def _start_relay(self, ws: web.WebSocketResponse) -> None:
         if self._relay_task is not None:
