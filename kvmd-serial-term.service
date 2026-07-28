@@ -7,7 +7,6 @@ Type=simple
 User=kvmd
 Group=kvmd
 ExecStart=/usr/bin/python -m kvmd_serial_term --config /etc/kvmd/serial-term.yaml
-ExecStartPost=/bin/sh -c "sleep 3 && test -S /run/kvmd/serial-term.sock && chmod 660 /run/kvmd/serial-term.sock"
 Restart=on-failure
 RestartSec=5s
 
