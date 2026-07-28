@@ -96,21 +96,20 @@ class SerialTermServer:
         return "pts" in dev or dev.startswith("/dev/ttys")
 
     async def _ensure_serial_dtr_cycle(self) -> None:
-        """Ensure serial is open AND has a fresh DTR cycle.
-
-        This forces the target machine's getty to restart and re-print
-        the login banner, regardless of whether this is a first connection
-        or a reconnection. PTY devices (tests) skip the cycle."""
+        """Close (if open) and reopen serial to cycle DTR, then send
+        a newline kick to trigger getty output."""
         if self._serial.is_open:
-            if not self._is_pty_device():
-                await self._serial.close()
-                await asyncio.sleep(0.3)
-            else:
+            if self._is_pty_device():
                 logger.info("PTY device, skipping DTR cycle")
                 return
+            await self._serial.close()
+            await asyncio.sleep(0.3)
 
         await self._serial.open()
         logger.info("Serial port cycled (DTR reset)")
+        # Give DTR + remote getty time to settle, then kick
+        await asyncio.sleep(1.0)
+        await self._serial.write(b"\r\n")
         await asyncio.sleep(0.5)
 
     async def _start_relay(self, ws: web.WebSocketResponse) -> None:
