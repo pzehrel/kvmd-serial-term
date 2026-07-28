@@ -224,6 +224,11 @@ class SerialTermServer:
                 promoted = self._clients.release(client_id)
                 if promoted:
                     self._promote(promoted)
+                elif self._serial.is_open:
+                    # Nobody left in queue — end the current getty session
+                    # so the next client gets a fresh login banner.
+                    logger.info("No queued clients — sending Ctrl+D to close getty session")
+                    await self._serial.write(b"\x04")
             else:
                 self._queued_ws.pop(client_id, None)
                 self._clients.release(client_id)
