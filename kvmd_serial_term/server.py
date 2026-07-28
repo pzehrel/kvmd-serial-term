@@ -107,10 +107,8 @@ class SerialTermServer:
 
         await self._serial.open()
         logger.info("Serial port cycled (DTR reset)")
-        # Give DTR + remote getty time to settle, then kick
-        await asyncio.sleep(1.0)
-        await self._serial.write(b"\r\n")
-        await asyncio.sleep(0.5)
+        # Give DTR + remote getty time to restart and print the login banner
+        await asyncio.sleep(1.5)
 
     async def _start_relay(self, ws: web.WebSocketResponse) -> None:
         if self._relay_task is not None:
