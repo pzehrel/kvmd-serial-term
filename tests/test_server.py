@@ -70,7 +70,7 @@ async def test_websocket_keypress_to_pty(temp_socket):
         async with ClientSession(connector=conn) as session:
             async with session.ws_connect("http://localhost/ws") as ws:
                 # Drain the \r\n kick that _start_relay sends on connect
-                await asyncio.sleep(0.2)
+                await asyncio.sleep(0.8)
                 if select.select([master_fd], [], [], 0.3)[0]:
                     os.read(master_fd, 1024)
 
@@ -78,7 +78,7 @@ async def test_websocket_keypress_to_pty(temp_socket):
                 await ws.send_str("ls -la\n")
 
                 # Give the relay time to forward to serial
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.3)
 
                 # Read from PTY master (non-blocking)
                 ready, _, _ = select.select([master_fd], [], [], 0.5)
@@ -218,13 +218,13 @@ async def test_full_stack_session_queue(temp_socket):
         assert data1["type"] == "active"
 
         # Drain the \r\n kick that _start_relay sends on connect
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.8)
         if select.select([master_fd], [], [], 0.3)[0]:
             os.read(master_fd, 1024)
 
         # Client 1 sends keystrokes → they reach the PTY
         await ws1.send_str("echo hello\n")
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.3)
         ready, _, _ = select.select([master_fd], [], [], 0.5)
         assert master_fd in ready
         buf = os.read(master_fd, 1024)
@@ -266,8 +266,8 @@ async def test_full_stack_session_queue(temp_socket):
         promo = json.loads(msg.data)
         assert promo["type"] == "active", f"Expected active, got {promo}"
 
-        # Wait briefly for relay to switch
-        await asyncio.sleep(0.3)
+        # Wait for relay to switch + kick + start
+        await asyncio.sleep(0.8)
 
         # Drain the \r\n kick from the promoted relay restart
         if select.select([master_fd], [], [], 0.3)[0]:
@@ -275,7 +275,7 @@ async def test_full_stack_session_queue(temp_socket):
 
         # Now client 2's keystrokes should reach the PTY
         await ws2.send_str("now active\n")
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.3)
         ready, _, _ = select.select([master_fd], [], [], 0.5)
         assert master_fd in ready, "Promoted client keystrokes should reach PTY"
         buf = os.read(master_fd, 1024)

@@ -95,11 +95,9 @@ class SerialTermServer:
         if not self._serial.is_open:
             await self._serial.open()
             logger.info("Serial port opened lazily")
-            # Wait for DTR to take effect on the target machine
             await asyncio.sleep(0.5)
 
     async def _start_relay(self, ws: web.WebSocketResponse) -> None:
-        # Always stop any existing relay (which targets a previous ws)
         if self._relay_task is not None:
             await self._stop_relay()
 
@@ -107,16 +105,17 @@ class SerialTermServer:
 
         # Kick the target machine to produce output (e.g. login prompt)
         await self._serial.write(b"\r\n")
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(0.5)
 
         async def relay() -> None:
             while not ws.closed:
                 try:
                     data = await self._serial.read()
                     if data:
-                        logger.debug("Relay: read %d bytes from serial", len(data))
+                        logger.info("Relay: read %d bytes from serial", len(data))
                         text = data.decode("utf-8", errors="replace")
                         await ws.send_str(text)
+                        logger.info("Relay: sent %d bytes to WebSocket", len(data))
                 except Exception:
                     logger.exception("Serial read error in relay")
                     break
