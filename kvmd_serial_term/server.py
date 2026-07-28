@@ -58,7 +58,9 @@ class SerialTermServer:
         os.makedirs(os.path.dirname(socket_path), exist_ok=True)
         site = web.UnixSite(self._runner, socket_path)
         await site.start()
-        logger.info("Server listening on %s", socket_path)
+        # Fix socket permissions so nginx (kvmd-nginx user, kvmd group) can connect
+        os.chmod(socket_path, 0o660)
+        logger.info("Server listening on %s (mode 660)", socket_path)
 
     async def stop(self) -> None:
         if self._relay_task is not None:
