@@ -108,10 +108,6 @@ class SerialTermServer:
         await self._serial.open()
         logger.info("Serial port cycled (DTR reset)")
         await asyncio.sleep(0.5)
-        # Send ONE newline to trigger getty to print the login banner
-        # DO NOT send two — the echo causes a second duplicate prompt
-        await self._serial.write(b"\n")
-        await asyncio.sleep(0.5)
 
     async def _start_relay(self, ws: web.WebSocketResponse) -> None:
         if self._relay_task is not None:
@@ -119,8 +115,10 @@ class SerialTermServer:
 
         await self._ensure_serial_dtr_cycle()
 
-        # DTR cycle (in _ensure_serial_open) will cause getty to restart
-        # and re-print the login banner. No need for an extra \r\n kick.
+        # CH340 DTR doesn't actually restart agetty on the target machine,
+        # so we send a single \n to trigger agetty to re-print the prompt.
+        await self._serial.write(b"\n")
+        await asyncio.sleep(0.5)
 
         async def relay() -> None:
             while not ws.closed:
