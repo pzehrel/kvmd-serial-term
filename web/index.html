@@ -60,6 +60,7 @@
   var term = null;
   var fitAddon = null;
   var ws = null;
+  var isActive = false;
   var reconnectTimer = null;
 
   function initTerminal() {
@@ -89,7 +90,10 @@
     fitAddon.fit();
 
     term.onData(function(data) {
-      if (ws && ws.readyState === WebSocket.OPEN) {
+      // Guard: only relay keystrokes AFTER server confirms we're active.
+      // xterm.js sends cursor queries etc. during init — those must not
+      // leak to the serial port as shell input ("Login incorrect").
+      if (isActive && ws && ws.readyState === WebSocket.OPEN) {
         ws.send(data);
       }
     });
@@ -130,8 +134,10 @@
         try {
           var ctrl = JSON.parse(ev.data);
           if (ctrl.type === 'active') {
+            isActive = true;
             showTerminal();
           } else if (ctrl.type === 'queue') {
+            isActive = false;
             showWaiting('Someone else is using the serial port. You are in the queue.', ctrl.position);
           }
           return;
@@ -142,6 +148,7 @@
     };
 
     ws.onclose = function() {
+      isActive = false;
       if (!term) showWaiting('Connection lost. Reconnecting…', null);
       reconnectTimer = setTimeout(connect, 2000);
     };
