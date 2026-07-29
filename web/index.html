@@ -66,7 +66,8 @@
     if (term) return;
     term = new Terminal({
       allowProposedApi: false,
-      cursorBlink: true,
+      cursorBlink: false,
+      disableStdin: false,
       fontSize: 14,
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       theme: {
@@ -106,10 +107,8 @@
     waitingEl.style.display = 'none';
     terminalEl.style.display = 'block';
     initTerminal();
-    if (term) term.focus();
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'resize', rows: term.rows, cols: term.cols }));
-    }
+    // Don't call term.focus() — it can send cursor escape sequences
+    // to the serial port via WebSocket. The user clicks to type naturally.
   }
 
   function showWaiting(text, pos) {
