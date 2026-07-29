@@ -11,12 +11,12 @@ from aiohttp import web
 from kvmd_serial_term.config import ServerConfig
 from kvmd_serial_term.serial_handler import SerialHandler
 from kvmd_serial_term.client import ClientManager
+from kvmd_serial_term.relay import Relay
 
 logger = logging.getLogger(__name__)
 
 
 async def _close_ws_safe(ws: web.WebSocketResponse) -> None:
-    """Close a WebSocket connection, timing out after 1 second."""
     try:
         await asyncio.wait_for(ws.close(), timeout=1.0)
     except (asyncio.TimeoutError, Exception):
@@ -33,12 +33,12 @@ class SerialTermServer:
     ) -> None:
         self._config = server_config
         self._serial = serial_handler
+        self._relay = Relay(serial_handler)
         self._app = web.Application()
         self._runner: "web.AppRunner | None" = None
         self._active_ws: "set[web.WebSocketResponse]" = set()
         self._clients = ClientManager(grace_period=10.0)
         self._queued_ws: "dict[str, web.WebSocketResponse]" = {}
-        self._relay_task: "asyncio.Task | None" = None
         self._setup_routes()
 
     def _setup_routes(self) -> None:
@@ -58,18 +58,11 @@ class SerialTermServer:
         os.makedirs(os.path.dirname(socket_path), exist_ok=True)
         site = web.UnixSite(self._runner, socket_path)
         await site.start()
-        # Fix socket permissions so nginx (kvmd-nginx user, kvmd group) can connect
         os.chmod(socket_path, 0o660)
         logger.info("Server listening on %s (mode 660)", socket_path)
 
     async def stop(self) -> None:
-        if self._relay_task is not None:
-            self._relay_task.cancel()
-            try:
-                await self._relay_task
-            except asyncio.CancelledError:
-                pass
-            self._relay_task = None
+        await self._relay.stop()
 
         for ws_list in (list(self._active_ws), list(self._queued_ws.values())):
             for ws in ws_list:
@@ -88,74 +81,14 @@ class SerialTermServer:
             pathlib.Path(self._config.web_dir) / "index.html"
         )
 
-    # ── Serial relay ──────────────────────────────────────────────────────
-
-    def _is_pty_device(self) -> bool:
-        """Check if the configured serial device is a PTY (test fixture)."""
-        dev = self._serial._config.device
-        return "pts" in dev or dev.startswith("/dev/ttys")
-
-    async def _serial_kick(self) -> None:
-        """Reopen the serial port and send \n to trigger getty output.
-
-        Called whenever a new client becomes active. The close/reopen
-        is best-effort (on real serial devices it may cycle DTR, on
-        CH340+MAX3232 it's a no-op), followed by a single \n which
-        reliably causes agetty to re-print the login prompt.
-        PTY devices (tests) skip the close cycle entirely."""
-        if self._serial.is_open:
-            if self._is_pty_device():
-                return
-            await self._serial.close()
-            await asyncio.sleep(0.3)
-
-        await self._serial.open()
-        await asyncio.sleep(0.5)
-        await self._serial.write(b"\n")
-        await asyncio.sleep(0.5)
-        logger.info("Serial kick: port reopened, \\n sent")
-
-    async def _start_relay(self, ws: web.WebSocketResponse) -> None:
-        if self._relay_task is not None:
-            await self._stop_relay()
-
-        await self._serial_kick()
-
-        async def relay() -> None:
-            while not ws.closed:
-                try:
-                    data = await self._serial.read()
-                    if data:
-                        logger.info("Relay: read %d bytes from serial", len(data))
-                        text = data.decode("utf-8", errors="replace")
-                        await ws.send_str(text)
-                        logger.info("Relay: sent %d bytes to WebSocket", len(data))
-                except Exception:
-                    logger.exception("Serial read error in relay")
-                    break
-                await asyncio.sleep(0.01)
-
-        self._relay_task = asyncio.create_task(relay())
-
-    async def _stop_relay(self) -> None:
-        if self._relay_task is not None:
-            self._relay_task.cancel()
-            try:
-                await self._relay_task
-            except asyncio.CancelledError:
-                pass
-            self._relay_task = None
-
     # ── WebSocket handler ─────────────────────────────────────────────────
 
     async def _handle_websocket(self, request: web.Request) -> web.WebSocketResponse:
         ws = web.WebSocketResponse()
         await ws.prepare(request)
 
-        # Use client-provided session ID for reconnect support
         client_id = request.query.get("sid", "")
         if not client_id:
-            # Fallback: generate a random one
             import uuid
             client_id = uuid.uuid4().hex[:12]
 
@@ -166,7 +99,7 @@ class SerialTermServer:
         reconnected = self._clients.reconnect(client_id)
         if reconnected:
             await ws.send_str(json.dumps({"type": "active"}))
-            await self._start_relay(ws)
+            await self._relay.start(ws)
             await self._ws_input_loop(ws, client_id)
             return ws
 
@@ -174,7 +107,7 @@ class SerialTermServer:
 
         if result["type"] == "active":
             await ws.send_str(json.dumps({"type": "active"}))
-            await self._start_relay(ws)
+            await self._relay.start(ws)
             await self._ws_input_loop(ws, client_id)
         else:
             self._queued_ws[client_id] = ws
@@ -219,15 +152,12 @@ class SerialTermServer:
                 await ws.close()
 
             if was_active:
-                await self._stop_relay()
+                await self._relay.stop()
                 promoted = self._clients.release(client_id)
                 if promoted:
                     self._promote(promoted)
-                elif self._serial.is_open:
-                    # Nobody left in queue — end the current getty session
-                    # so the next client gets a fresh login banner.
-                    logger.info("No queued clients — sending Ctrl+D to close getty session")
-                    await self._serial.write(b"\x04")
+                else:
+                    await self._relay.logout()
             else:
                 self._queued_ws.pop(client_id, None)
                 self._clients.release(client_id)
@@ -246,6 +176,6 @@ class SerialTermServer:
             except Exception:
                 logger.exception("Failed to send promotion notification")
                 return
-            await self._start_relay(ws)
+            await self._relay.start(ws)
 
         asyncio.create_task(promote_and_relay())

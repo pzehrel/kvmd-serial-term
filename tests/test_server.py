@@ -69,14 +69,13 @@ async def test_websocket_keypress_to_pty(temp_socket):
         conn = _unix_connector(temp_socket)
         async with ClientSession(connector=conn) as session:
             async with session.ws_connect("http://localhost/ws") as ws:
-                # Wait for relay to start and stabilize
-                await asyncio.sleep(0.6)
+                # Wait for relay to signal it's ready (replaces magic sleep)
+                await server._relay.started.wait()
 
-                # Send a keystroke
+                # Send a keystroke — need one event-loop tick for
+                # _ws_input_loop to receive and forward it to serial
                 await ws.send_str("ls -la\n")
-
-                # Give the relay time to forward to serial
-                await asyncio.sleep(0.3)
+                await asyncio.sleep(0.05)
 
                 # Read from PTY master (non-blocking)
                 ready, _, _ = select.select([master_fd], [], [], 0.5)
@@ -108,6 +107,9 @@ async def test_websocket_receives_pty_output(temp_socket):
                 msg = await ws.receive(timeout=2)
                 assert msg.type == WSMsgType.TEXT
                 assert '"active"' in msg.data
+
+                # Wait for relay to finish kick + start reading
+                await server._relay.started.wait()
 
                 # Now the relay is running — write to PTY
                 os.write(master_fd, b"hello from serial\n")
@@ -141,16 +143,13 @@ async def test_websocket_resize_message_does_not_crash(temp_socket):
         async with ClientSession(connector=conn) as session:
             async with session.ws_connect("http://localhost/ws") as ws:
                 await ws.send_str('{"type":"resize","rows":24,"cols":80}')
-                # Should be accepted without closing the WS
                 await asyncio.sleep(0.1)
                 assert not ws.closed
 
-                # Normal keystrokes should still work after resize
                 await ws.send_str("A")
                 await asyncio.sleep(0.1)
                 assert not ws.closed
 
-                # Clean close
                 await ws.close()
     finally:
         await server.stop()
@@ -175,7 +174,7 @@ async def test_server_static_files(temp_socket):
             async with session.get("http://localhost/static/xterm.js") as resp:
                 assert resp.status == 200
                 body = await resp.text()
-                assert "Terminal" in body  # xterm.js contains "Terminal" in its code
+                assert "Terminal" in body
 
             async with session.get("http://localhost/static/xterm.css") as resp:
                 assert resp.status == 200
@@ -215,12 +214,12 @@ async def test_full_stack_session_queue(temp_socket):
         data1 = json.loads(msg.data)
         assert data1["type"] == "active"
 
-        # Wait for relay to start and stabilize
-        await asyncio.sleep(0.6)
+        # Wait for relay to signal it's ready
+        await server._relay.started.wait()
 
         # Client 1 sends keystrokes → they reach the PTY
         await ws1.send_str("echo hello\n")
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(0.1)
         ready, _, _ = select.select([master_fd], [], [], 0.5)
         assert master_fd in ready
         buf = os.read(master_fd, 1024)
@@ -237,7 +236,6 @@ async def test_full_stack_session_queue(temp_socket):
         # Client 2's keystrokes should NOT reach the PTY (queued)
         await ws2.send_str("should not arrive\n")
         await asyncio.sleep(0.1)
-        # Drain any buffered PTY data from the relay
         if select.select([master_fd], [], [], 0.3)[0]:
             os.read(master_fd, 4096)
         await ws2.send_str("X")
@@ -253,7 +251,7 @@ async def test_full_stack_session_queue(temp_socket):
         await ws1.close()
         await session1.close()
 
-        # Give the server time to promote client 2
+        # Give the server time to promote client 2 (async create_task)
         await asyncio.sleep(0.3)
 
         # ── Client 2 should be promoted ──────────────────────────────────
@@ -262,12 +260,12 @@ async def test_full_stack_session_queue(temp_socket):
         promo = json.loads(msg.data)
         assert promo["type"] == "active", f"Expected active, got {promo}"
 
-        # Wait for relay to switch and stabilize
-        await asyncio.sleep(0.6)
+        # Wait for the NEW relay to signal it's ready
+        await server._relay.started.wait()
 
         # Now client 2's keystrokes should reach the PTY
         await ws2.send_str("now active\n")
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(0.1)
         ready, _, _ = select.select([master_fd], [], [], 0.5)
         assert master_fd in ready, "Promoted client keystrokes should reach PTY"
         buf = os.read(master_fd, 1024)

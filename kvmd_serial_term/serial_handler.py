@@ -28,6 +28,11 @@ class SerialHandler:
     def is_open(self) -> bool:
         return self._writer is not None
 
+    @property
+    def device(self) -> str:
+        """The serial device path (e.g. /dev/ttyUSB0)."""
+        return self._config.device
+
     @staticmethod
     def _serial_kwargs(config: SerialConfig) -> dict:
         """Map our config dataclass to pyserial keyword arguments."""
