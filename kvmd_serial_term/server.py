@@ -95,30 +95,31 @@ class SerialTermServer:
         dev = self._serial._config.device
         return "pts" in dev or dev.startswith("/dev/ttys")
 
-    async def _ensure_serial_dtr_cycle(self) -> None:
-        """Close (if open) and reopen serial to cycle DTR, then send
-        a newline kick to trigger getty output."""
+    async def _serial_kick(self) -> None:
+        """Reopen the serial port and send \n to trigger getty output.
+
+        Called whenever a new client becomes active. The close/reopen
+        is best-effort (on real serial devices it may cycle DTR, on
+        CH340+MAX3232 it's a no-op), followed by a single \n which
+        reliably causes agetty to re-print the login prompt.
+        PTY devices (tests) skip the close cycle entirely."""
         if self._serial.is_open:
             if self._is_pty_device():
-                logger.info("PTY device, skipping DTR cycle")
                 return
             await self._serial.close()
             await asyncio.sleep(0.3)
 
         await self._serial.open()
-        logger.info("Serial port cycled (DTR reset)")
         await asyncio.sleep(0.5)
+        await self._serial.write(b"\n")
+        await asyncio.sleep(0.5)
+        logger.info("Serial kick: port reopened, \\n sent")
 
     async def _start_relay(self, ws: web.WebSocketResponse) -> None:
         if self._relay_task is not None:
             await self._stop_relay()
 
-        await self._ensure_serial_dtr_cycle()
-
-        # CH340 DTR doesn't actually restart agetty on the target machine,
-        # so we send a single \n to trigger agetty to re-print the prompt.
-        await self._serial.write(b"\n")
-        await asyncio.sleep(0.5)
+        await self._serial_kick()
 
         async def relay() -> None:
             while not ws.closed:
