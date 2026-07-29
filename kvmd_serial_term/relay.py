@@ -90,8 +90,11 @@ class Relay:
             self._task = None
             logger.info("Relay stopped")
 
+    async def write(self, data: bytes) -> None:
+        """Write raw bytes to the serial port. Used for keystroke forwarding."""
+        await self._serial.write(data)
+
     async def logout(self) -> None:
         """Send Ctrl+D to the serial port to end the current getty session."""
-        if self._serial.is_open:
-            await self._serial.write(b"\x04")
-            logger.info("Ctrl+D sent to serial — getty session ended")
+        await self.write(b"\x04")
+        logger.info("Ctrl+D sent to serial — getty session ended")

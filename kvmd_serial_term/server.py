@@ -32,7 +32,6 @@ class SerialTermServer:
         serial_handler: SerialHandler,
     ) -> None:
         self._config = server_config
-        self._serial = serial_handler
         self._relay = Relay(serial_handler)
         self._app = web.Application()
         self._runner: "web.AppRunner | None" = None
@@ -140,7 +139,7 @@ class SerialTermServer:
                         except json.JSONDecodeError:
                             pass
                     if may_relay:
-                        await self._serial.write(text.encode("utf-8"))
+                        await self._relay.write(text.encode("utf-8"))
                 elif msg.type == web.WSMsgType.ERROR:
                     logger.error("WebSocket error: %s", ws.exception())
                     break
