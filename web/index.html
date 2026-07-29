@@ -8,26 +8,38 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; overflow: hidden; background: #1e1e1e; }
-  #terminal { height: 100%; }
-  #header {
-    height: 28px; background: #333; color: #aaa; font: 12px sans-serif;
-    display: flex; align-items: center; padding: 0 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.3);
-    display: none; /* hidden by default; shown when queued */
+
+  #terminal { display: none; height: 100%; }
+
+  #waiting {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%; color: #888; font-family: sans-serif;
+    text-align: center;
   }
+  #waiting .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+  #waiting .title { font-size: 18px; margin-bottom: 8px; color: #aaa; }
+  #waiting .subtitle { font-size: 13px; color: #666; }
+  #waiting .pos { font-size: 36px; font-weight: bold; color: #555; margin: 12px 0; }
+
   .xterm { padding: 4px; }
   .xterm-viewport::-webkit-scrollbar { width: 8px; }
   .xterm-viewport::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
 </style>
 </head>
 <body>
-<div id="header">Serial Terminal — waiting in queue (position <span id="qpos">-</span>)</div>
+<div id="waiting">
+  <div class="icon">&#x231B;</div>
+  <div class="title">Serial Terminal</div>
+  <div class="subtitle" id="waiting-text">Connecting…</div>
+  <div class="pos" id="qpos"></div>
+</div>
 <div id="terminal"></div>
+
 <script src="/serial/static/xterm.js"></script>
 <script src="/serial/static/xterm-addon-fit.js"></script>
 <script>
 (function() {
-  // Session ID persisted in sessionStorage so reconnects reuse the same ID
   var SID = sessionStorage.getItem('serial-term-sid');
   if (!SID) {
     SID = Math.random().toString(36).slice(2, 14);
@@ -37,63 +49,91 @@
   var WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://')
              + location.host + '/serial/ws?sid=' + encodeURIComponent(SID);
 
-  var term = new Terminal({
-    cursorBlink: true,
-    fontSize: 14,
-    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-    theme: {
-      background: '#1e1e1e',
-      foreground: '#d4d4d4',
-      cursor: '#ffffff',
-      selectionBackground: '#264f78',
-    },
-  });
+  var waitingEl = document.getElementById('waiting');
+  var waitingText = document.getElementById('waiting-text');
+  var qposEl = document.getElementById('qpos');
+  var terminalEl = document.getElementById('terminal');
 
-  var fitAddon = new FitAddon.FitAddon();
-  term.loadAddon(fitAddon);
-  term.open(document.getElementById('terminal'));
-  fitAddon.fit();
-
-  var header = document.getElementById('header');
-  var qpos = document.getElementById('qpos');
-
+  var term = null;
+  var fitAddon = null;
   var ws = null;
   var reconnectTimer = null;
+
+  function initTerminal() {
+    if (term) return;
+    term = new Terminal({
+      cursorBlink: true,
+      fontSize: 14,
+      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+      theme: {
+        background: '#1e1e1e',
+        foreground: '#d4d4d4',
+        cursor: '#ffffff',
+        selectionBackground: '#264f78',
+      },
+    });
+    fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(terminalEl);
+    fitAddon.fit();
+
+    term.onData(function(data) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(data);
+      }
+    });
+
+    term.onResize(function(size) {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'resize', rows: size.rows, cols: size.cols }));
+      }
+    });
+
+    window.addEventListener('resize', function() { fitAddon.fit(); });
+  }
+
+  function showTerminal() {
+    waitingEl.style.display = 'none';
+    terminalEl.style.display = 'block';
+    initTerminal();
+    if (term) term.focus();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'resize', rows: term.rows, cols: term.cols }));
+    }
+  }
+
+  function showWaiting(text, pos) {
+    terminalEl.style.display = 'none';
+    waitingEl.style.display = 'flex';
+    waitingText.textContent = text;
+    qposEl.textContent = pos != null ? '#' + pos : '';
+  }
 
   function connect() {
     if (ws && ws.readyState === WebSocket.OPEN) return;
 
     ws = new WebSocket(WS_URL);
 
-    ws.onopen = function() {
-      term.focus();
-      ws.send(JSON.stringify({ type: 'resize', rows: term.rows, cols: term.cols }));
-    };
-
     ws.onmessage = function(ev) {
       if (typeof ev.data !== 'string') return;
 
-      // Filter JSON control/session messages from terminal output
       if (ev.data.charCodeAt(0) === 0x7B /* '{' */) {
         try {
           var ctrl = JSON.parse(ev.data);
           if (ctrl.type === 'active') {
-            header.style.display = 'none';
-            term.focus();
+            showTerminal();
           } else if (ctrl.type === 'queue') {
-            qpos.textContent = ctrl.position;
-            header.style.display = 'flex';
+            showWaiting('Someone else is using the serial port. You are in the queue.', ctrl.position);
           }
-          return; // don't write control JSON to the terminal
-        } catch (e) {
-          // Not JSON — fall through to write as normal output
-        }
+          return;
+        } catch (e) { /* fall through */ }
       }
 
-      term.write(ev.data);
+      if (term) term.write(ev.data);
     };
 
     ws.onclose = function() {
+      if (!term) showWaiting('Connection lost. Reconnecting…', null);
       reconnectTimer = setTimeout(connect, 2000);
     };
 
@@ -101,20 +141,6 @@
       ws.close();
     };
   }
-
-  term.onData(function(data) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(data);
-    }
-  });
-
-  term.onResize(function(size) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'resize', rows: size.rows, cols: size.cols }));
-    }
-  });
-
-  window.addEventListener('resize', function() { fitAddon.fit(); });
 
   connect();
 })();
