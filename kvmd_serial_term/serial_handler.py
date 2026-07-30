@@ -63,8 +63,6 @@ class SerialHandler:
             "stopbits": stopbits_map.get(config.stopbits, serial.STOPBITS_ONE),
             "xonxoff": config.xonxoff,
             "rtscts": config.rtscts,
-            "dsrdtr": True,  # Assert DTR so the target machine knows we connected
-            "exclusive": True,  # Lock the serial device
         }
 
     async def open(self, device_path: Optional[str] = None) -> None:
