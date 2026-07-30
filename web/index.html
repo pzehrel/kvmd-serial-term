@@ -59,7 +59,6 @@
   var term = null;
   var fitAddon = null;
   var ws = null;
-  var wasQueued = false;
   var reconnectTimer = null;
 
   function initTerminal() {
@@ -126,14 +125,8 @@
         try {
           var ctrl = JSON.parse(ev.data);
           if (ctrl.type === 'active') {
-            if (wasQueued) {
-              // Promoted from queue — reload for a clean terminal from line 1
-              location.reload();
-            } else {
-              showTerminal();
-            }
+            showTerminal();
           } else if (ctrl.type === 'queue') {
-            wasQueued = true;
             showWaiting('Someone else is using the serial port. You are in the queue.', ctrl.position);
           }
           return;
