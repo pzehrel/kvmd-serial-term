@@ -156,8 +156,7 @@ class SerialTermServer:
                 if promoted:
                     self._promote(promoted)
                 elif self._relay.had_activity:
-                    # User typed something → there's a live shell session.
-                    # End it so the next user gets a fresh login prompt.
+                    # User typed something — there's a live shell session. End it.
                     await self._relay.logout()
             else:
                 self._queued_ws.pop(client_id, None)

@@ -100,6 +100,6 @@ class Relay:
         await self._serial.write(data)
 
     async def logout(self) -> None:
-        """Send Ctrl+D to the serial port to end the current getty session."""
+        """Send Ctrl+D to end the current getty session."""
         await self.write(b"\x04")
         logger.info("Ctrl+D sent to serial — getty session ended")

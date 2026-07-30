@@ -118,11 +118,7 @@ async def test_relay_logout_sends_ctrl_d():
     await relay.start(ws)
     try:
         await relay.logout()
-
-        # Read from PTY master — should get \x04
         await asyncio.sleep(0.1)
-        # Ctrl+D was sent; if the other side was a real shell,
-        # it would cause EOF. On PTY it's just received as bytes.
     finally:
         await relay.stop()
     os.close(master_fd)
