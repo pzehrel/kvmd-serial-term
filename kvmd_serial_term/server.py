@@ -155,8 +155,6 @@ class SerialTermServer:
                 promoted = self._clients.release(client_id)
                 if promoted:
                     self._promote(promoted)
-                else:
-                    await self._relay.logout()
             else:
                 self._queued_ws.pop(client_id, None)
                 self._clients.release(client_id)
