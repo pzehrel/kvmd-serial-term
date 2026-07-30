@@ -155,6 +155,10 @@ class SerialTermServer:
                 promoted = self._clients.release(client_id)
                 if promoted:
                     self._promote(promoted)
+                elif self._relay.had_activity:
+                    # User typed something → there's a live shell session.
+                    # End it so the next user gets a fresh login prompt.
+                    await self._relay.logout()
             else:
                 self._queued_ws.pop(client_id, None)
                 self._clients.release(client_id)
