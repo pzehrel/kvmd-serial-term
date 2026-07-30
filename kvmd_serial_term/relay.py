@@ -6,12 +6,28 @@ the old WebSocket target with the new one.  Observable via relay.started.
 
 import asyncio
 import logging
+import re
 
 from aiohttp import web
 
 from kvmd_serial_term.serial_handler import SerialHandler
 
 logger = logging.getLogger(__name__)
+
+# ANSI escape sequence: ESC [ params... letter
+_ANSI_RE = re.compile(b"\x1b\\[[0-9;?]*[a-zA-Z]")
+# Strip ANSI sequences and replace non-printable / non-ASCII bytes.
+# Needed because CH340+MAX3232 serial links can have framing errors
+# that produce spurious high-bytes which form bogus valid UTF-8.
+_STRIP_RE = re.compile(b"[^\x20-\x7e\x0a\x0d\x09]+")
+
+
+def _clean_serial_data(data: bytes) -> str:
+    """Strip ANSI escape sequences and non-printable bytes from serial output,
+    then decode as ASCII (replacing any remaining non-ASCII with ?)."""
+    cleaned = _ANSI_RE.sub(b"", data)
+    cleaned = _STRIP_RE.sub(b" ", cleaned)
+    return cleaned.decode("ascii", errors="replace")
 
 
 class Relay:
@@ -68,8 +84,9 @@ class Relay:
                 try:
                     data = await self._serial.read()
                     if data:
-                        text = data.decode("utf-8", errors="replace")
-                        await ws.send_str(text)
+                        text = _clean_serial_data(data)
+                        if text.strip():
+                            await ws.send_str(text)
                 except Exception:
                     logger.exception("Relay read error")
                     break
