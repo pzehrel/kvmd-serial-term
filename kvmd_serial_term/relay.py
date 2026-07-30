@@ -21,9 +21,6 @@ class Relay:
         self._serial = serial
         self.started = asyncio.Event()
         self._task: "asyncio.Task | None" = None
-        # True when the active client has typed at least one keystroke.
-        # Used to decide whether to Ctrl+D logout the shell on disconnect.
-        self.had_activity = False
 
     # ── observable state ──────────────────────────────────────────────────
 
@@ -64,7 +61,6 @@ class Relay:
             await self.stop()
 
         self.started.clear()
-        self.had_activity = False
         await self._kick()
 
         async def _loop() -> None:
@@ -96,7 +92,6 @@ class Relay:
 
     async def write(self, data: bytes) -> None:
         """Write raw bytes to the serial port. Used for keystroke forwarding."""
-        self.had_activity = True
         await self._serial.write(data)
 
     async def logout(self) -> None:

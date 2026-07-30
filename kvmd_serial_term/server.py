@@ -151,13 +151,11 @@ class SerialTermServer:
                 await ws.close()
 
             if was_active:
+                await self._relay.logout()
                 await self._relay.stop()
                 promoted = self._clients.release(client_id)
                 if promoted:
                     self._promote(promoted)
-                elif self._relay.had_activity:
-                    # User typed something — there's a live shell session. End it.
-                    await self._relay.logout()
             else:
                 self._queued_ws.pop(client_id, None)
                 self._clients.release(client_id)
