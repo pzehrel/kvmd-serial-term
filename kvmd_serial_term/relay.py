@@ -21,6 +21,9 @@ class Relay:
         self._serial = serial
         self.started = asyncio.Event()
         self._task: "asyncio.Task | None" = None
+        # True when the previous client was logged out via Ctrl+D.
+        # The next kick can skip the \n because getty restarted itself.
+        self._fresh_getty = False
 
     # ── observable state ──────────────────────────────────────────────────
 
@@ -38,18 +41,27 @@ class Relay:
     # ── serial kick ───────────────────────────────────────────────────────
 
     async def _kick(self) -> None:
-        """Close (if real device), reopen serial, then send \\n to trigger
-        getty to re-print the login prompt."""
+        """Close (if real device), reopen serial.  If the previous client
+        was logged out, getty has already restarted and printed the banner;
+        just wait.  Otherwise send \\n to trigger getty output."""
         if self._serial.is_open:
             if self._is_pty():
-                return  # PTY survives close/reopen, skip the cycle
+                return
             await self._serial.close()
             await asyncio.sleep(0.3)
 
         await self._serial.open()
-        await asyncio.sleep(0.5)
-        await self._serial.write(b"\n")
-        await asyncio.sleep(0.5)
+
+        if self._fresh_getty:
+            # Ctrl+D already restarted getty — banner + prompt are coming
+            await asyncio.sleep(1.0)
+            logger.info("Serial kick: port reopened, waiting for fresh getty banner")
+        else:
+            # No recent logout — need to trigger getty output
+            await asyncio.sleep(0.5)
+            await self._serial.write(b"\n")
+            await asyncio.sleep(0.5)
+            logger.info("Serial kick: \\n sent to trigger login prompt")
         logger.info("Serial kick: port reopened, \\n sent")
 
     # ── lifecycle ─────────────────────────────────────────────────────────
@@ -95,6 +107,8 @@ class Relay:
         await self._serial.write(data)
 
     async def logout(self) -> None:
-        """Send Ctrl+D to the serial port to end the current getty session."""
+        """Send Ctrl+D to end the current getty session.  The next kick
+        will skip \\n because getty restarts and prints the banner itself."""
         await self.write(b"\x04")
-        logger.info("Ctrl+D sent to serial — getty session ended")
+        self._fresh_getty = True
+        logger.info("Ctrl+D sent — getty session ended")
