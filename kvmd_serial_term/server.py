@@ -120,7 +120,6 @@ class SerialTermServer:
         ws: web.WebSocketResponse,
         client_id: str,
     ) -> None:
-        was_active = self._clients.is_active(client_id)
         try:
             async for msg in ws:
                 may_relay = self._clients.is_active(client_id)
@@ -150,7 +149,8 @@ class SerialTermServer:
             if not ws.closed:
                 await ws.close()
 
-            if was_active:
+            # Dynamic check — client may have been promoted mid-session
+            if self._clients.is_active(client_id):
                 await self._relay.logout()
                 await self._relay.stop()
                 promoted = self._clients.release(client_id)
