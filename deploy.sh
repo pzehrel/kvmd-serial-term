@@ -61,6 +61,9 @@ cp "$REPO_DIR/web/index.html" /usr/share/kvmd/web/serial-term/
 cp "$REPO_DIR/web/xterm.js" /usr/share/kvmd/web/serial-term/
 cp "$REPO_DIR/web/xterm.css" /usr/share/kvmd/web/serial-term/
 cp "$REPO_DIR/web/xterm-addon-fit.js" /usr/share/kvmd/web/serial-term/
+	cp "$REPO_DIR/web/xterm-addon-canvas.js" /usr/share/kvmd/web/serial-term/
+	cp "$REPO_DIR/web/xterm-addon-web-links.js" /usr/share/kvmd/web/serial-term/
+	cp "$REPO_DIR/web/xterm-addon-search.js" /usr/share/kvmd/web/serial-term/
 
 # ── 7. SVG icon ─────────────────────────────────────────────────────────
 cp "$REPO_DIR/web/serial.svg" /usr/share/kvmd/web/share/svg/serial.svg
