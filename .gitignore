@@ -9,3 +9,4 @@ build/
 .claude/
 .playwright/
 .playwright-cli/
+CLAUDE.md
