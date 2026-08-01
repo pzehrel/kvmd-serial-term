@@ -1,6 +1,7 @@
 """aiohttp server: HTTP page + WebSocket ↔ serial relay with client management."""
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -8,19 +9,17 @@ import pathlib
 
 from aiohttp import web
 
-from kvmd_serial_term.config import ServerConfig
-from kvmd_serial_term.serial_handler import SerialHandler
 from kvmd_serial_term.client import ClientManager
+from kvmd_serial_term.config import ServerConfig
 from kvmd_serial_term.relay import Relay
+from kvmd_serial_term.serial_handler import SerialHandler
 
 logger = logging.getLogger(__name__)
 
 
 async def _close_ws_safe(ws: web.WebSocketResponse) -> None:
-    try:
+    with contextlib.suppress(Exception):
         await asyncio.wait_for(ws.close(), timeout=1.0)
-    except (asyncio.TimeoutError, Exception):
-        pass
 
 
 class SerialTermServer:
@@ -34,10 +33,10 @@ class SerialTermServer:
         self._config = server_config
         self._relay = Relay(serial_handler)
         self._app = web.Application()
-        self._runner: "web.AppRunner | None" = None
-        self._active_ws: "set[web.WebSocketResponse]" = set()
+        self._runner: web.AppRunner | None = None
+        self._active_ws: set[web.WebSocketResponse] = set()
         self._clients = ClientManager(grace_period=10.0)
-        self._queued_ws: "dict[str, web.WebSocketResponse]" = {}
+        self._queued_ws: dict[str, web.WebSocketResponse] = {}
         self._setup_routes()
 
     def _setup_routes(self) -> None:

@@ -166,12 +166,12 @@ async def test_server_static_files(temp_socket):
     try:
         conn = _unix_connector(temp_socket)
         async with ClientSession(connector=conn) as session:
-            async with session.get("http://localhost/static/xterm.js") as resp:  # noqa: SIM117
+            async with session.get("http://localhost/static/xterm.js") as resp:
                 assert resp.status == 200
                 body = await resp.text()
                 assert "Terminal" in body
 
-            async with session.get("http://localhost/static/xterm.css") as resp:  # noqa: SIM117
+            async with session.get("http://localhost/static/xterm.css") as resp:
                 assert resp.status == 200
                 body = await resp.text()
                 assert ".xterm" in body

@@ -1,11 +1,11 @@
 """Configuration loading and validation for kvmd-serial-term."""
+from __future__ import annotations
 
 import pathlib
 from dataclasses import dataclass, field
-from typing import Optional, Union, TextIO
+from typing import TextIO
 
 import yaml
-
 
 # ── defaults ─────────────────────────────────────────────────────────────────
 
@@ -61,7 +61,7 @@ class AppConfig:
 
 # ── loader ───────────────────────────────────────────────────────────────────
 
-def _merge(raw: Optional[dict], defaults: dict, factory: type):
+def _merge(raw: dict | None, defaults: dict, factory: type):
     """Merge raw YAML block with defaults, return a dataclass instance."""
     if raw is None:
         raw = {}
@@ -69,7 +69,7 @@ def _merge(raw: Optional[dict], defaults: dict, factory: type):
     return factory(**kwargs)
 
 
-def load_config(source: Union[str, TextIO], _path_hint: Optional[str] = None) -> AppConfig:
+def load_config(source: str | TextIO, _path_hint: str | None = None) -> AppConfig:
     """Load configuration from a YAML file path or a file-like object.
 
     Args:

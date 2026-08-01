@@ -1,8 +1,8 @@
 """Client management — exclusive serial port access with queue and grace period."""
+from __future__ import annotations
 
 import logging
 import time
-from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +18,10 @@ class ClientManager:
 
     def __init__(self, grace_period: float = 10.0) -> None:
         self._grace_period = grace_period
-        self._active: Optional[str] = None
+        self._active: str | None = None
         self._queue: list[str] = []
         # Map: client_id → timestamp of last release (for grace period)
-        self._grace: Dict[str, float] = {}
+        self._grace: dict[str, float] = {}
 
     # ── public API ────────────────────────────────────────────────────────
 
@@ -50,7 +50,7 @@ class ClientManager:
         logger.info("Client %s queued at position %s", client_id, pos)
         return {"type": "queue", "position": pos}
 
-    def release(self, client_id: str) -> Optional[str]:
+    def release(self, client_id: str) -> str | None:
         """Release the serial port.
 
         If client_id is the active holder, the next queued client is promoted.
@@ -99,7 +99,7 @@ class ClientManager:
         """Check if client_id currently holds the serial port."""
         return self._active == client_id
 
-    def get_position(self, client_id: str) -> Optional[int]:
+    def get_position(self, client_id: str) -> int | None:
         """Return the 1-indexed queue position, or None if not queued."""
         if client_id in self._queue:
             return self._queue.index(client_id) + 1
@@ -107,7 +107,7 @@ class ClientManager:
 
     # ── internals ─────────────────────────────────────────────────────────
 
-    def _promote_next(self) -> Optional[str]:
+    def _promote_next(self) -> str | None:
         """Promote the next client in the queue to active."""
         if not self._queue:
             return None

@@ -1,11 +1,11 @@
 """Async serial I/O using pyserial-asyncio."""
+from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional
 
-import serial_asyncio
 import serial
+import serial_asyncio
 
 from kvmd_serial_term.config import SerialConfig
 
@@ -21,8 +21,8 @@ class SerialHandler:
 
     def __init__(self, config: SerialConfig) -> None:
         self._config = config
-        self._reader: "asyncio.StreamReader | None" = None
-        self._writer: "asyncio.StreamWriter | None" = None
+        self._reader: asyncio.StreamReader | None = None
+        self._writer: asyncio.StreamWriter | None = None
 
     @property
     def is_open(self) -> bool:
@@ -65,7 +65,7 @@ class SerialHandler:
             "rtscts": config.rtscts,
         }
 
-    async def open(self, device_path: Optional[str] = None) -> None:
+    async def open(self, device_path: str | None = None) -> None:
         """Open the serial port and begin reading.
 
         Args:

@@ -4,7 +4,7 @@ import argparse
 import asyncio
 import logging
 
-from kvmd_serial_term.config import load_config, DEFAULT_CONFIG_PATH
+from kvmd_serial_term.config import DEFAULT_CONFIG_PATH, load_config
 from kvmd_serial_term.serial_handler import SerialHandler
 from kvmd_serial_term.server import SerialTermServer
 

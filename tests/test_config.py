@@ -1,16 +1,15 @@
 """Tests for configuration loading and validation."""
 
 import io
-import tempfile
 import os
-
+import tempfile
 
 from kvmd_serial_term.config import (
-    load_config,
-    SerialConfig,
-    ServerConfig,
     DEFAULT_SERIAL_CONFIG,
     DEFAULT_SERVER_CONFIG,
+    SerialConfig,
+    ServerConfig,
+    load_config,
 )
 
 

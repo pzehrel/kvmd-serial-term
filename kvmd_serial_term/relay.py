@@ -20,7 +20,7 @@ class Relay:
     def __init__(self, serial: SerialHandler) -> None:
         self._serial = serial
         self.started = asyncio.Event()
-        self._task: "asyncio.Task | None" = None
+        self._task: asyncio.Task | None = None
         # True when the previous client was logged out via Ctrl+D.
         # The next kick can skip the \n because getty restarted itself.
         self._fresh_getty = False
