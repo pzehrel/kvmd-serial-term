@@ -46,6 +46,9 @@ PiKVM 扩展——通过 USB-TTL 串口适配器在 Web UI 中对目标电脑进
    reboot
    ```
 
+   > `serial-getty@ttyS0` 在 systemd 发行版（Arch、Debian）下默认启用。
+   > 如未运行，执行 `systemctl enable --now serial-getty@ttyS0`。
+
 3. **连接适配器：**
 
    参见 [接线说明](docs/hardware/wiring.zh.md) · [English](docs/hardware/wiring.md)

@@ -46,6 +46,9 @@ A PiKVM extra that provides interactive command-line access to a target machine 
    reboot
    ```
 
+   > `serial-getty@ttyS0` is enabled by default on systemd distros (Arch, Debian).
+   > If it's not running, enable it with `systemctl enable --now serial-getty@ttyS0`.
+
 3. **Wire the adapter:**
 
    See [wiring guide](docs/hardware/wiring.md) · [中文](docs/hardware/wiring.zh.md)
