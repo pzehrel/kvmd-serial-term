@@ -10,3 +10,10 @@ build/
 .playwright/
 .playwright-cli/
 CLAUDE.md
+
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+.TemporaryItems
