@@ -65,8 +65,8 @@ COM 排针位于主板左下角，丝印 **COM**，标准 9-pin 布局。
 ## 信号方向说明
 
 ```
-键盘输入 → PiKVM → CH340(TXD) → MAX3232(TTL→RS232) → COM Pin 2(NSIN) → PVE shell
-PVE shell → COM Pin 3(NSOUT) → MAX3232(RS232→TTL) → CH340(RXD) → PiKVM → 浏览器
+键盘输入 → PiKVM → CH340(TXD) → MAX3232(TTL→RS232) → COM Pin 2(NSIN) → 目标 Linux shell
+目标 Linux shell → COM Pin 3(NSOUT) → MAX3232(RS232→TTL) → CH340(RXD) → PiKVM → 浏览器
 ```
 
 ## 串口参数
@@ -79,7 +79,7 @@ PVE shell → COM Pin 3(NSOUT) → MAX3232(RS232→TTL) → CH340(RXD) → PiKVM
 | 校验 | 无 |
 | 流控 | 无 |
 
-PVE 侧 agetty 自动适配 `115200,57600,38400,9600`（`--keep-baud`）。
+目标主机侧 agetty 自动适配 `115200,57600,38400,9600`（`--keep-baud`）。
 
 ## 常见问题
 
@@ -93,7 +93,7 @@ PVE 侧 agetty 自动适配 `115200,57600,38400,9600`（`--keep-baud`）。
 
 ### 无法输入
 
-检查 PVE 是否启用了 `serial-getty@ttyS0`：
+检查目标主机是否启用了 `serial-getty@ttyS0`：
 
 ```bash
 systemctl status serial-getty@ttyS0

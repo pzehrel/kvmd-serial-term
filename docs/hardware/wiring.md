@@ -65,8 +65,8 @@ The COM header is on the bottom-left of the motherboard, labeled **COM**, standa
 ## Signal Flow
 
 ```
-Keyboard → PiKVM → CH340(TXD) → MAX3232(TTL→RS232) → COM Pin 2(NSIN) → PVE shell
-PVE shell → COM Pin 3(NSOUT) → MAX3232(RS232→TTL) → CH340(RXD) → PiKVM → Browser
+Keyboard → PiKVM → CH340(TXD) → MAX3232(TTL→RS232) → COM Pin 2(NSIN) → Target Linux shell
+Target Linux shell → COM Pin 3(NSOUT) → MAX3232(RS232→TTL) → CH340(RXD) → PiKVM → Browser
 ```
 
 ## Serial Parameters
@@ -79,7 +79,7 @@ PVE shell → COM Pin 3(NSOUT) → MAX3232(RS232→TTL) → CH340(RXD) → PiKVM
 | Parity | None |
 | Flow control | None |
 
-The PVE-side agetty auto-adapts to `115200,57600,38400,9600` (`--keep-baud`).
+The target-side agetty auto-adapts to `115200,57600,38400,9600` (`--keep-baud`).
 
 ## FAQ
 
@@ -93,7 +93,7 @@ Confirm the TX/RX wires on the COM header are crossed (TX of one end → RX of t
 
 ### Cannot type
 
-Check that `serial-getty@ttyS0` is enabled on PVE:
+Check that `serial-getty@ttyS0` is enabled on the target machine:
 
 ```bash
 systemctl status serial-getty@ttyS0

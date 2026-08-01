@@ -7,7 +7,7 @@ PiKVM 扩展——通过 USB-TTL 串口适配器在 Web UI 中对目标电脑进
 ```
 ┌─────────────┐     USB-TTL      ┌──────────────────┐
 │   PiKVM     │  (CH340+MAX3232) │   目标电脑         │
-│             │◄════════════════►│   (e.g. Proxmox)  │
+│             │◄════════════════►│   (e.g. Linux)    │
 │  Web UI     │   Serial COM     │   Serial Console   │
 │   xterm.js  │                  │                    │
 └─────────────┘                  └──────────────────┘
@@ -30,14 +30,13 @@ PiKVM 扩展——通过 USB-TTL 串口适配器在 Web UI 中对目标电脑进
 - USB-TTL 适配器：CH340（或同类）+ MAX3232 用于 RS-232 电平转换
 - 目标电脑主板 COM 口排针
 
-> **接线说明请参阅 [docs/hardware/wiring.md](docs/hardware/wiring.zh.md) · [English](docs/hardware/wiring.md)**
+> **接线说明请参阅 [docs/hardware/wiring.zh.md](docs/hardware/wiring.zh.md) · [English](docs/hardware/wiring.md)**
 
 ## 目标电脑配置
 
 1. **BIOS 中开启 COM 口**——通常在 "Super IO" 或 "Peripherals" 菜单下
 2. **配置串口 console**：
 
-   **Proxmox VE / Debian / Ubuntu:**
    ```
    # 编辑 /etc/default/grub
    GRUB_CMDLINE_LINUX="console=ttyS0,115200n8"
@@ -46,9 +45,6 @@ PiKVM 扩展——通过 USB-TTL 串口适配器在 Web UI 中对目标电脑进
    update-grub
    reboot
    ```
-
-   **通用 Linux:**
-   在内核命令行中添加 `console=ttyS0,115200n8`
 
 3. **连接适配器：**
 

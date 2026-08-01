@@ -7,7 +7,7 @@ A PiKVM extra that provides interactive command-line access to a target machine 
 ```
 ┌─────────────┐     USB-TTL      ┌──────────────────┐
 │   PiKVM     │  (CH340+MAX3232) │  Target Machine   │
-│             │◄════════════════►│   (e.g. Proxmox)  │
+│             │◄════════════════►│      (Linux)      │
 │  Web UI     │   Serial COM     │  Serial Console    │
 │   xterm.js  │                  │                    │
 └─────────────┘                  └──────────────────┘
@@ -37,7 +37,6 @@ A PiKVM extra that provides interactive command-line access to a target machine 
 1. **Enable COM port in BIOS** — usually under "Super IO" or "Peripherals"
 2. **Configure a serial console**:
 
-   **Proxmox VE / Debian / Ubuntu:**
    ```
    # Edit /etc/default/grub
    GRUB_CMDLINE_LINUX="console=ttyS0,115200n8"
@@ -46,9 +45,6 @@ A PiKVM extra that provides interactive command-line access to a target machine 
    update-grub
    reboot
    ```
-
-   **Generic Linux:**
-   Add `console=ttyS0,115200n8` to the kernel command line
 
 3. **Wire the adapter:**
 
