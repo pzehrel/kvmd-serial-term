@@ -7,8 +7,8 @@ import pty
 import pytest
 
 from kvmd_serial_term.config import SerialConfig
-from kvmd_serial_term.serial_handler import SerialHandler
 from kvmd_serial_term.relay import Relay
+from kvmd_serial_term.serial_handler import SerialHandler
 
 
 def make_pty_pair():

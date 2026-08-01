@@ -4,14 +4,11 @@ import io
 import tempfile
 import os
 
-import pytest
-import yaml
 
 from kvmd_serial_term.config import (
     load_config,
     SerialConfig,
     ServerConfig,
-    AppConfig,
     DEFAULT_SERIAL_CONFIG,
     DEFAULT_SERVER_CONFIG,
 )

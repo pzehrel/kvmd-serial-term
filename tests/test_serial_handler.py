@@ -6,7 +6,7 @@ import os
 import pytest
 
 from kvmd_serial_term.config import SerialConfig
-from kvmd_serial_term.serial_handler import SerialHandler, SerialError
+from kvmd_serial_term.serial_handler import SerialError, SerialHandler
 from tests.conftest import make_pty_pair
 
 

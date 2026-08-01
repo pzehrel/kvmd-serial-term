@@ -1,6 +1,5 @@
 """Configuration loading and validation for kvmd-serial-term."""
 
-import os
 import pathlib
 from dataclasses import dataclass, field
 from typing import Optional, Union, TextIO

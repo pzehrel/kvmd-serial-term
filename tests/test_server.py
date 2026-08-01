@@ -7,8 +7,7 @@ import select
 import tempfile
 
 import pytest
-from aiohttp import ClientSession, WSMsgType
-from aiohttp import UnixConnector
+from aiohttp import ClientSession, UnixConnector, WSMsgType
 
 from kvmd_serial_term.config import SerialConfig, ServerConfig
 from kvmd_serial_term.serial_handler import SerialHandler
@@ -42,12 +41,11 @@ async def test_server_serves_index_html(temp_socket):
 
     try:
         conn = _unix_connector(temp_socket)
-        async with ClientSession(connector=conn) as session:
-            async with session.get("http://localhost/") as resp:
-                assert resp.status == 200
-                body = await resp.text()
-                assert "<!DOCTYPE html>" in body
-                assert "xterm" in body
+        async with ClientSession(connector=conn) as session, session.get("http://localhost/") as resp:
+            assert resp.status == 200
+            body = await resp.text()
+            assert "<!DOCTYPE html>" in body
+            assert "xterm" in body
     finally:
         await server.stop()
         await handler.close()
@@ -67,21 +65,20 @@ async def test_websocket_keypress_to_pty(temp_socket):
 
     try:
         conn = _unix_connector(temp_socket)
-        async with ClientSession(connector=conn) as session:
-            async with session.ws_connect("http://localhost/ws") as ws:
-                # Wait for relay to signal it's ready (replaces magic sleep)
-                await server._relay.started.wait()
+        async with ClientSession(connector=conn) as session, session.ws_connect("http://localhost/ws") as ws:
+            # Wait for relay to signal it's ready (replaces magic sleep)
+            await server._relay.started.wait()
 
-                # Send a keystroke — need one event-loop tick for
-                # _ws_input_loop to receive and forward it to serial
-                await ws.send_str("ls -la\n")
-                await asyncio.sleep(0.05)
+            # Send a keystroke — need one event-loop tick for
+            # _ws_input_loop to receive and forward it to serial
+            await ws.send_str("ls -la\n")
+            await asyncio.sleep(0.05)
 
-                # Read from PTY master (non-blocking)
-                ready, _, _ = select.select([master_fd], [], [], 0.5)
-                assert master_fd in ready, "PTY master should have received data"
-                data = os.read(master_fd, 1024)
-                assert b"ls -la\n" in data
+            # Read from PTY master (non-blocking)
+            ready, _, _ = select.select([master_fd], [], [], 0.5)
+            assert master_fd in ready, "PTY master should have received data"
+            data = os.read(master_fd, 1024)
+            assert b"ls -la\n" in data
     finally:
         await server.stop()
         await handler.close()
@@ -101,26 +98,25 @@ async def test_websocket_receives_pty_output(temp_socket):
 
     try:
         conn = _unix_connector(temp_socket)
-        async with ClientSession(connector=conn) as session:
-            async with session.ws_connect("http://localhost/ws") as ws:
-                # Consume the session "active" notification
-                msg = await ws.receive(timeout=2)
-                assert msg.type == WSMsgType.TEXT
-                assert '"active"' in msg.data
+        async with ClientSession(connector=conn) as session, session.ws_connect("http://localhost/ws") as ws:
+            # Consume the session "active" notification
+            msg = await ws.receive(timeout=2)
+            assert msg.type == WSMsgType.TEXT
+            assert '"active"' in msg.data
 
-                # Wait for relay to finish kick + start reading
-                await server._relay.started.wait()
+            # Wait for relay to finish kick + start reading
+            await server._relay.started.wait()
 
-                # Now the relay is running — write to PTY
-                os.write(master_fd, b"hello from serial\n")
-                await asyncio.sleep(0.1)
+            # Now the relay is running — write to PTY
+            os.write(master_fd, b"hello from serial\n")
+            await asyncio.sleep(0.1)
 
-                # Wait for the relay to forward to WebSocket
-                msg = await ws.receive(timeout=2)
-                assert msg.type == WSMsgType.TEXT
-                assert "hello from serial" in msg.data
+            # Wait for the relay to forward to WebSocket
+            msg = await ws.receive(timeout=2)
+            assert msg.type == WSMsgType.TEXT
+            assert "hello from serial" in msg.data
 
-                await ws.close()
+            await ws.close()
     finally:
         await server.stop()
         await handler.close()
@@ -140,17 +136,16 @@ async def test_websocket_resize_message_does_not_crash(temp_socket):
 
     try:
         conn = _unix_connector(temp_socket)
-        async with ClientSession(connector=conn) as session:
-            async with session.ws_connect("http://localhost/ws") as ws:
-                await ws.send_str('{"type":"resize","rows":24,"cols":80}')
-                await asyncio.sleep(0.1)
-                assert not ws.closed
+        async with ClientSession(connector=conn) as session, session.ws_connect("http://localhost/ws") as ws:
+            await ws.send_str('{"type":"resize","rows":24,"cols":80}')
+            await asyncio.sleep(0.1)
+            assert not ws.closed
 
-                await ws.send_str("A")
-                await asyncio.sleep(0.1)
-                assert not ws.closed
+            await ws.send_str("A")
+            await asyncio.sleep(0.1)
+            assert not ws.closed
 
-                await ws.close()
+            await ws.close()
     finally:
         await server.stop()
         await handler.close()
@@ -171,12 +166,12 @@ async def test_server_static_files(temp_socket):
     try:
         conn = _unix_connector(temp_socket)
         async with ClientSession(connector=conn) as session:
-            async with session.get("http://localhost/static/xterm.js") as resp:
+            async with session.get("http://localhost/static/xterm.js") as resp:  # noqa: SIM117
                 assert resp.status == 200
                 body = await resp.text()
                 assert "Terminal" in body
 
-            async with session.get("http://localhost/static/xterm.css") as resp:
+            async with session.get("http://localhost/static/xterm.css") as resp:  # noqa: SIM117
                 assert resp.status == 200
                 body = await resp.text()
                 assert ".xterm" in body
