@@ -37,6 +37,7 @@
 <div id="terminal"></div>
 
 <script src="/serial/static/xterm.js"></script>
+<script src="/serial/static/xterm-addon-canvas.js"></script>
 <script src="/serial/static/xterm-addon-fit.js"></script>
 <script src="/serial/static/xterm-addon-web-links.js"></script>
 <script src="/serial/static/xterm-addon-search.js"></script>
@@ -74,6 +75,8 @@
         selectionBackground: '#264f78',
       },
     });
+    // Canvas renders via <canvas> — 10x faster than DOM
+    term.loadAddon(new CanvasAddon.CanvasAddon());
     // Auto-detect URLs in terminal output and make them clickable
     term.loadAddon(new WebLinksAddon.WebLinksAddon());
     // Ctrl+Shift+F to search within terminal content
