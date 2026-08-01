@@ -1,6 +1,6 @@
 # CH340 + MAX3232 ↔ 主板 COM 口接线说明
 
-> English summary: wiring guide for connecting a CH340 USB-TTL adapter (with MAX3232 level-shifter) to the motherboard COM port header — TX/RX crossed, common GND, 115200 8N1.
+> [English](wiring.en.md)
 
 ## 所需硬件
 

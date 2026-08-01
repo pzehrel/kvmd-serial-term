@@ -30,7 +30,7 @@ A PiKVM extra that provides interactive command-line access to a target machine 
 - USB-TTL adapter: CH340 (or equivalent) + MAX3232 for RS-232 level shifting
 - Target machine with a COM port header on the motherboard
 
-> **Wiring guide: [docs/hardware/wiring.md](docs/hardware/wiring.md)**
+> **Wiring guide: [docs/hardware/wiring.md](docs/hardware/wiring.en.md) · [中文](docs/hardware/wiring.md)**
 
 ## Target Machine Preparation
 
@@ -52,7 +52,7 @@ A PiKVM extra that provides interactive command-line access to a target machine 
 
 3. **Wire the adapter:**
 
-   See [wiring guide](docs/hardware/wiring.md)
+   See [wiring guide](docs/hardware/wiring.en.md) · [中文](docs/hardware/wiring.md)
 
 ## Installation
 

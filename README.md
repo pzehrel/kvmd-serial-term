@@ -30,7 +30,7 @@ PiKVM 扩展——通过 USB-TTL 串口适配器在 Web UI 中对目标电脑进
 - USB-TTL 适配器：CH340（或同类）+ MAX3232 用于 RS-232 电平转换
 - 目标电脑主板 COM 口排针
 
-> **接线说明请参阅 [docs/hardware/wiring.md](docs/hardware/wiring.md)**
+> **接线说明请参阅 [docs/hardware/wiring.md](docs/hardware/wiring.md) · [English](docs/hardware/wiring.en.md)**
 
 ## 目标电脑配置
 
@@ -52,7 +52,7 @@ PiKVM 扩展——通过 USB-TTL 串口适配器在 Web UI 中对目标电脑进
 
 3. **连接适配器：**
 
-   参见 [接线说明](docs/hardware/wiring.md)
+   参见 [接线说明](docs/hardware/wiring.md) · [English](docs/hardware/wiring.en.md)
 
 ## 安装
 
