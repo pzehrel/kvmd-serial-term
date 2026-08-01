@@ -6,7 +6,7 @@ A PiKVM extra that provides interactive command-line access to a target machine 
 
 ```
 ┌─────────────┐     USB-TTL      ┌──────────────────┐
-│   PiKVM     │  (CH340+MAX3232) │  Target Machine   │
+│   PiKVM     │                  │  Target Machine   │
 │             │◄════════════════►│      (Linux)      │
 │  Web UI     │   Serial COM     │  Serial Console    │
 │   xterm.js  │                  │                    │
@@ -27,8 +27,11 @@ A PiKVM extra that provides interactive command-line access to a target machine 
 
 ## Hardware Requirements
 
-- USB-TTL adapter: CH340 (or equivalent) + MAX3232 for RS-232 level shifting
-- Target machine with a COM port header on the motherboard
+- **USB-TTL serial adapter** — any chipset (CH340, CP210x, FTDI, PL2303, etc.)
+- **Target machine with a COM port header** on the motherboard
+- **Level shifter (e.g. MAX3232)** — mandatory
+
+> ⚠️ **Voltage warning:** PC COM ports use RS-232 voltage levels (±12V–±15V), while USB-TTL adapters operate at TTL levels (3.3V/5V). **Connecting them directly will destroy the adapter.** A level shifter converts between the two voltage domains.
 
 > **Wiring guide: [docs/hardware/wiring.md](docs/hardware/wiring.md) · [中文](docs/hardware/wiring.zh.md)**
 
@@ -73,8 +76,7 @@ bash deploy.sh
 `/etc/kvmd/serial-term.yaml`:
 
 > **Finding your serial device:** Plug in the USB-TTL adapter and run
-> `ls /dev/ttyUSB*` or `dmesg | grep ttyUSB` on the PiKVM.
-> CH340-based adapters usually appear as `/dev/ttyUSB0`.
+> `ls /dev/ttyUSB* /dev/ttyACM*` or `dmesg | grep tty` on the PiKVM.
 
 ```yaml
 serial:

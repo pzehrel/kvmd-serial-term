@@ -6,7 +6,7 @@ PiKVM 扩展——通过 USB-TTL 串口适配器在 Web UI 中对目标电脑进
 
 ```
 ┌─────────────┐     USB-TTL      ┌──────────────────┐
-│   PiKVM     │  (CH340+MAX3232) │   目标电脑         │
+│   PiKVM     │                  │   目标电脑         │
 │             │◄════════════════►│   (e.g. Linux)    │
 │  Web UI     │   Serial COM     │   Serial Console   │
 │   xterm.js  │                  │                    │
@@ -27,10 +27,13 @@ PiKVM 扩展——通过 USB-TTL 串口适配器在 Web UI 中对目标电脑进
 
 ## 硬件要求
 
-- USB-TTL 适配器：CH340（或同类）+ MAX3232 用于 RS-232 电平转换
-- 目标电脑主板 COM 口排针
+- **USB-TTL 串口适配器** — 任意芯片均可（CH340、CP210x、FTDI、PL2303 等）
+- **目标电脑主板 COM 口排针**
+- **电平转换模块（如 MAX3232）** — 必须配备
 
-> **接线说明请参阅 [docs/hardware/wiring.zh.md](docs/hardware/wiring.zh.md) · [English](docs/hardware/wiring.md)**
+> ⚠️ **电压警告：** 电脑 COM 口使用 RS-232 电平（±12V~±15V），而 USB-TTL 适配器工作在 TTL 电平（3.3V/5V）。**直接连接会烧毁适配器。**需通过电平转换模块连接两个电压域。
+
+> **接线说明详见 [docs/hardware/wiring.zh.md](docs/hardware/wiring.zh.md) · [English](docs/hardware/wiring.md)**
 
 ## 目标电脑配置
 
@@ -73,8 +76,7 @@ bash deploy.sh
 `/etc/kvmd/serial-term.yaml`：
 
 > **查找串口设备：** 插入 USB-TTL 适配器后，在 PiKVM 上执行
-> `ls /dev/ttyUSB*` 或 `dmesg | grep ttyUSB`。
-> CH340 适配器通常显示为 `/dev/ttyUSB0`。
+> `ls /dev/ttyUSB* /dev/ttyACM*` 或 `dmesg | grep tty`。
 
 ```yaml
 serial:
