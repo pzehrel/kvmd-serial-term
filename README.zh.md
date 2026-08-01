@@ -69,6 +69,10 @@ bash deploy.sh
 
 `/etc/kvmd/serial-term.yaml`：
 
+> **查找串口设备：** 插入 USB-TTL 适配器后，在 PiKVM 上执行
+> `ls /dev/ttyUSB*` 或 `dmesg | grep ttyUSB`。
+> CH340 适配器通常显示为 `/dev/ttyUSB0`。
+
 ```yaml
 serial:
   device: /dev/ttyUSB0      # 串口设备路径

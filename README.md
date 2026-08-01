@@ -69,6 +69,10 @@ bash deploy.sh
 
 `/etc/kvmd/serial-term.yaml`:
 
+> **Finding your serial device:** Plug in the USB-TTL adapter and run
+> `ls /dev/ttyUSB*` or `dmesg | grep ttyUSB` on the PiKVM.
+> CH340-based adapters usually appear as `/dev/ttyUSB0`.
+
 ```yaml
 serial:
   device: /dev/ttyUSB0      # Serial device path
