@@ -1,41 +1,41 @@
-# CH340 + MAX3232 ↔ 主板 COM 口接线说明
+# CH340 + MAX3232 → Motherboard COM Port Wiring
 
-> [English](wiring.en.md)
+> [中文](wiring.zh.md)
 
-## 所需硬件
+## Required Hardware
 
-| 器件 | 作用 |
-|------|------|
-| CH340 USB-TTL 模块 | USB 转 TTL 串口（3.3V/5V 逻辑电平） |
-| MAX3232 模块 | TTL ↔ RS-232 电平转换（±3V~±15V） |
-| 杜邦线 ×3 | TX、RX、GND |
+| Component | Purpose |
+|-----------|---------|
+| CH340 USB-TTL module | USB to TTL serial (3.3V/5V logic level) |
+| MAX3232 module | TTL ↔ RS-232 level shifting (±3V~±15V) |
+| 3× Dupont wires | TX, RX, GND |
 
-## 主板 COM 排针脚位
+## Motherboard COM Port Header Pinout
 
-COM 排针位于主板左下角，丝印 **COM**，标准 9-pin 布局。
+The COM header is on the bottom-left of the motherboard, labeled **COM**, standard 9-pin layout.
 
-**右侧为 Pin 1，上下交替递增索引**（右→左：1→2→3→…→9）：
+**Pin 1 is on the right. Pins increment alternating top/bottom** (right→left: 1→2→3→…→9):
 
 | | | | | | |
 | :---: | :---: | :---: | :---: | :---: | :---: |
-| 上排 | 9<br/>NRI- | 7<br/>NRTS- | **5<br/>GND** | **3<br/>NSOUT** | 1<br/>NDCD- |
-| 下排 | (空) | 8<br/>NCTS- | 6<br/>NDSR- | 4<br/>NDTR- | **2<br/>NSIN** |
+| Top row | 9<br/>NRI- | 7<br/>NRTS- | **5<br/>GND** | **3<br/>NSOUT** | 1<br/>NDCD- |
+| Bottom row | (NC) | 8<br/>NCTS- | 6<br/>NDSR- | 4<br/>NDTR- | **2<br/>NSIN** |
 
-**核心引脚：**
+**Essential pins:**
 
-| 引脚 | 信号 | 方向 | 说明 |
-|------|------|------|------|
-| Pin 2 | NSIN | 主板 ← 外部 | 主板串口接收（RX） |
-| Pin 3 | NSOUT | 主板 → 外部 | 主板串口发送（TX） |
-| Pin 5 | GND | — | 共地 |
+| Pin | Signal | Direction | Description |
+|-----|--------|-----------|-------------|
+| Pin 2 | NSIN | MB ← external | Motherboard serial receive (RX) |
+| Pin 3 | NSOUT | MB → external | Motherboard serial transmit (TX) |
+| Pin 5 | GND | — | Common ground |
 
-## 接线图
+## Wiring Diagram
 
-> **关键**：MAX3232 模块 TTL 侧和 RS232 侧均为**交叉接法**——一端的 TX 接另一端的 RX。
+> **Important**: Both the TTL side and RS232 side of the MAX3232 use a **cross-over connection** — TX of one end goes to RX of the other.
 
 ```
 ┌─────────┐                  ┌───────────┐                  ┌──────────────┐
-│  CH340  │                  │  MAX3232  │                  │  主板 COM 口   │
+│  CH340  │                  │  MAX3232  │                  │    MB COM     │
 │         │                  │           │                  │              │
 │  TXD ───┼──────────────────┼→ RXD(TTL) │                  │              │
 │         │                  │           │                  │              │
@@ -45,7 +45,7 @@ COM 排针位于主板左下角，丝印 **COM**，标准 9-pin 布局。
 │         │                  │           │                  │              │
 │  GND ───┼────────┬─────────┼→ GND      │                  │              │
 │         │        │         │           │                  │              │
-│         │        │   TTL侧 │  RS232侧  │                  │              │
+│         │        │   TTL   │  RS232    │                  │              │
 │         │        │         │  TX ──────┼──────────────────┼→ Pin 2 (NSIN) │
 │         │        │         │           │                  │              │
 │         │        │         │  RX ──────┼──────────────────┼─ Pin 3 (NSOUT)│
@@ -55,51 +55,51 @@ COM 排针位于主板左下角，丝印 **COM**，标准 9-pin 布局。
 └─────────┘                  └───────────┘                  └──────────────┘
 ```
 
-| 信号 | CH340 | MAX3232（TTL 侧） | MAX3232（RS232 侧） | 主板 COM |
-|------|-------|------------------|--------------------|----------|
-| 发送 | TXD | RXD | TX | Pin 2（NSIN） |
-| 接收 | RXD | TXD | RX | Pin 3（NSOUT） |
-| 供电 | VCC | VCC | — | — |
-| 共地 | GND | GND | GND | Pin 5（GND） |
+| Signal | CH340 | MAX3232 (TTL) | MAX3232 (RS232) | COM Header |
+|--------|-------|---------------|-----------------|------------|
+| Transmit | TXD | RXD | TX | Pin 2 (NSIN) |
+| Receive | RXD | TXD | RX | Pin 3 (NSOUT) |
+| Power | VCC | VCC | — | — |
+| Ground | GND | GND | GND | Pin 5 (GND) |
 
-## 信号方向说明
+## Signal Flow
 
 ```
-键盘输入 → PiKVM → CH340(TXD) → MAX3232(TTL→RS232) → COM Pin 2(NSIN) → PVE shell
-PVE shell → COM Pin 3(NSOUT) → MAX3232(RS232→TTL) → CH340(RXD) → PiKVM → 浏览器
+Keyboard → PiKVM → CH340(TXD) → MAX3232(TTL→RS232) → COM Pin 2(NSIN) → PVE shell
+PVE shell → COM Pin 3(NSOUT) → MAX3232(RS232→TTL) → CH340(RXD) → PiKVM → Browser
 ```
 
-## 串口参数
+## Serial Parameters
 
-| 参数 | 值 |
-|------|-----|
-| 波特率 | 115200 |
-| 数据位 | 8 |
-| 停止位 | 1 |
-| 校验 | 无 |
-| 流控 | 无 |
+| Parameter | Value |
+|-----------|-------|
+| Baud rate | 115200 |
+| Data bits | 8 |
+| Stop bits | 1 |
+| Parity | None |
+| Flow control | None |
 
-PVE 侧 agetty 自动适配 `115200,57600,38400,9600`（`--keep-baud`）。
+The PVE-side agetty auto-adapts to `115200,57600,38400,9600` (`--keep-baud`).
 
-## 常见问题
+## FAQ
 
-### 终端出现乱码
+### Garbled output
 
-检查 GND 线是否连接——没有共地参考电压，UART 无法区分信号和噪声。如果 GND 已连接，尝试重新插拔 USB-TTL 适配器。
+Check that the GND wire is connected — without a common ground reference the UART cannot distinguish signal from noise. If GND is connected, try re-plugging the USB-TTL adapter.
 
-### 终端完全空白
+### Blank terminal
 
-确认 COM 口排针上的 TX/RX 是否交叉连接（一端的 TX 接另一端的 RX）。如果 TX 接 TX、RX 接 RX，两端互相发送但谁都不接收。
+Confirm the TX/RX wires on the COM header are crossed (TX of one end → RX of the other). TX-to-TX and RX-to-RX means both sides transmit but neither receives.
 
-### 无法输入
+### Cannot type
 
-检查 PVE 是否启用了 `serial-getty@ttyS0`：
+Check that `serial-getty@ttyS0` is enabled on PVE:
 
 ```bash
 systemctl status serial-getty@ttyS0
 ```
 
-如果显示 `inactive`，执行：
+If it shows `inactive`:
 
 ```bash
 systemctl enable --now serial-getty@ttyS0
